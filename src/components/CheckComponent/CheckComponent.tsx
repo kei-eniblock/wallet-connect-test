@@ -1,4 +1,4 @@
-import React, {CSSProperties} from 'react';
+import React, {CSSProperties, useEffect} from 'react';
 import {ClipLoader} from "react-spinners";
 import authService from "../../services/auth-service";
 import {useNavigate} from "react-router-dom";
@@ -13,16 +13,22 @@ function CheckComponent(): React.JSX.Element {
 
     const navigate = useNavigate();
 
-    authService.receiveCode().then(() => {
-        console.log('Code receive');
-        authService.getTokens().then(accessTokens => {
-            console.log(accessTokens);
-            navigate('/');
+    useEffect(() => {
+        authService.receiveCode().then(() => {
+            console.log('Code receive');
+            authService.getTokens().then(accessTokens => {
+                console.log(accessTokens);
+                navigate('/', {
+                    state: {
+                        accessToken: accessTokens.accessToken
+                    }
+                });
+            }).catch((error) => {
+                console.error('Get tokens on error:', error);
+            });
         }).catch((error) => {
-            console.error('Get tokens on error:', error);
-        })
-    }).catch((error) => {
-        console.error('Code not received:', error);
+            console.error('Code not received:', error);
+        });
     });
 
     return (
@@ -37,6 +43,5 @@ function CheckComponent(): React.JSX.Element {
             />
         </div>);
 }
-
 
 export default CheckComponent;

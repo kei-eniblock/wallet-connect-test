@@ -3,22 +3,15 @@ import logo from './logo.svg';
 import './App.css';
 import authService from "./services/auth-service";
 import {Eniblock, UnsafeStorage} from "@eniblock/sdk";
+import {useLocation} from "react-router-dom";
 
 function App(): React.JSX.Element {
+
     const [publicKey, setPublicKey] = useState<string>('');
     const [address, setAddress] = useState<string>('');
-    const sdk = new Eniblock({
-        authConfig: {
-            clientId: process.env.AUTH_CLIENT_ID!,
-            redirectUrl: process.env.AUTH_REDIRECT_URI!,
-        },
-        tssConfig: {
-            kmsUrl: "https://sdk.eniblock.com",
-            wasmPath: "wasm/eniblock.wasm",
-            kmsVerify: true,
-        },
-        storageItems: [{alias: "LocalStorage", storage: new UnsafeStorage()}],
-    });
+    const [sdk, setSdk] = useState<Eniblock>();
+    const location = useLocation();
+    const accessToken = location?.state?.accessToken ?? '';
 
     const handleLoginClick = () => {
         setTimeout(() => console.log('Log in progress'), 2000);
@@ -30,17 +23,52 @@ function App(): React.JSX.Element {
     }
 
     useEffect(() => {
-        sdk.wallet.instantiate().then(wallet => {
-            wallet.account.instantiate('My first account').then(account => {
-                account.getPublicKey().then(publicKey => {
-                    setPublicKey(publicKey);
-                }).catch(error => console.error(error));
-                account.getAddress().then(address => {
-                    setAddress(address);
-                }).catch(error => console.error(error));
-            }).catch(error => console.error(error));
-        }).catch(error => console.error(error));
-    })
+        console.log(`access token : ${accessToken}`);
+        const fetchSdk = async () => {
+            if (authService.isLoggedIn()) {
+                console.log('fetch sdk');
+                setSdk(new Eniblock({
+                    appId: process.env.APP_ID!,
+                    tssConfig: {
+                        wasmPath: "wasm/eniblock.wasm",
+                        kmsVerify: true,
+                    },
+                    accessTokenProvider: (() => Promise.resolve(accessToken)),
+                    storageItems: [{alias: "UnsafeStorage", storage: new UnsafeStorage()}],
+                }));
+            }
+            return {};
+        }
+        console.log('effect');
+
+        fetchSdk().then(() => {
+            console.log('succeeded')
+        }).catch(reason => console.error(reason));
+    }, [accessToken]);
+
+    useEffect(() => {
+        if (sdk) {
+            const fetchAccount = async () => {
+                if (sdk) {
+                    const wallet = await sdk.wallet.instantiate();
+                    console.log(wallet);
+                    const account = await wallet.account.instantiate('My first account');
+                    console.log(account);
+                    const publicKeyFromAccount = await account.getPublicKey();
+                    setPublicKey(publicKeyFromAccount);
+
+                    const addressFromAccount = await account.getAddress();
+                    setAddress(addressFromAccount);
+
+                    return {wallet, account, publicKeyFromAccount, addressFromAccount}
+                }
+            }
+            fetchAccount().then(walletAndAccount => {
+                console.log('succeeded');
+                console.log(walletAndAccount);
+            }).catch(reason => console.error(reason));
+        }
+    }, [sdk]);
 
     return (
         <div className="App">
@@ -57,14 +85,19 @@ function App(): React.JSX.Element {
                 >
                     Learn React
                 </a>
-                {!authService.isLoggedIn() ?
-                    <button onClick={handleLoginClick}>Login to instantiate a wallet</button> :
-                    <div>Logged in ! <p>
-                        Your wallet and your account are instantiated<br/>
-                        Your public key : ${publicKey}<br/>
-                        Your address : ${address}<br/>
-                        You can check your console to see the detail of these objects.
-                    </p></div>}
+                {publicKey &&
+                    <div>Logged in !
+                        <p>Your wallet and your account are instantiated<br/></p>
+                        <p>Your public key : {publicKey}<br/></p>
+                        <p>Your address : {address}<br/></p>
+                        <p>You can check your console to see the detail of these objects.</p>
+                    </div>
+                }
+                {!publicKey &&
+                    <>
+                        <button onClick={handleLoginClick}>Login to instantiate a wallet</button>
+                    </>
+                }
             </header>
         </div>
     );

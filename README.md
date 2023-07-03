@@ -91,4 +91,5 @@ Finally, you will need to provide these environment variables in your .env(*) to
 AUTH_CLIENT_ID=<the client id of your auth provider>
 AUTH_REDIRECT_URI=<the uri where your auth provider will redirect you after login>
 AUTH_SDK_URL=https://auth.sdk.eniblock.com
+APP_ID=<the id of your app created here https://sdk.eniblock.com/admin >
 ```
