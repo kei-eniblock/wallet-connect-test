@@ -1,8 +1,6 @@
-const dotenv = require('dotenv')
 const path = require('path')
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
-
-dotenv.config();
+const https = require("https");
 
 module.exports = {
     entry: path.resolve(__dirname, 'src', 'index.tsx'),
@@ -24,9 +22,9 @@ module.exports = {
         },
     },
     devServer: {
-        host: 'localtest.me',
+        host: 'a.myho.st',
         port: 8888,
-        https: true
+        server: https
     },
     optimization: {
         splitChunks: {

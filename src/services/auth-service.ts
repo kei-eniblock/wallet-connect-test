@@ -1,52 +1,109 @@
-import {OAuth2AuthCodePkceClient} from "oauth2-pkce";
+import {generateChallenge, generateVerifier} from "../utils/pkce";
+import {Eniblock, UnsafeStorage} from "@eniblock/sdk";
+import axios from "axios";
+
+const redirectUri = 'https://a.myho.st:8888/check';
+const clientId = 'a41b90ce-a548-49a3-a403-7ead41a31140';
+const oauth2SdkUrl = 'https://auth.sdk.eniblock.com';
 
 class AuthService {
-    oauthClient: OAuth2AuthCodePkceClient;
+    // Method to initiate login process
+    login() {
+        const verifier = generateVerifier();
+        const challenge = generateChallenge(verifier);
+        const state = generateVerifier();
 
-    constructor() {
-        this.oauthClient = new OAuth2AuthCodePkceClient({
-            scopes: ['openid', 'email', 'profile', 'eniblock', 'offline_access'],
-            authorizationUrl: `https://auth.sdk.eniblock.com/oauth2/auth`,
-            tokenUrl: `https://auth.sdk.eniblock.com/oauth2/token`,
-            clientId: process.env.AUTH_CLIENT_ID!,
-            redirectUrl: process.env.AUTH_REDIRECT_URI!,
-            storeRefreshToken: true, // Be careful with this option
-            extraAuthorizationParams: {audience: 'https://sdk.eniblock.com'},
-            /* onAccessTokenExpiry() {
-               // when the access token has expired
-               return oauthClient.exchangeRefreshTokenForAccessToken();
-             },*/
-            onInvalidGrant() {
-                // when there is an error getting a token with a grant
-                console.warn('Invalid grant! Auth code or refresh token need to be renewed.');
-                // you probably want to redirect the user to the login page here
-            },
-            onInvalidToken() {
-                // the token is invalid, e. g. because it has been removed in the backend
-                console.warn('Invalid token! Refresh and access tokens need to be renewed.');
-                // you probably want to redirect the user to the login page here
-            }
+        // Save the verifier, challenge and state in local storage for later use
+        localStorage.setItem('starter_sdk_react_pkce_verifier', verifier);
+        localStorage.setItem('starter_sdk_react_pkce_state', state);
+        localStorage.setItem('starter_sdk_react_pkce_challenge', challenge);
+
+        const authorizationUrl = `${oauth2SdkUrl}/oauth2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${
+            encodeURIComponent(redirectUri)
+        }&response_type=code&scope=${
+            encodeURIComponent('openid profile email eniblock offline_access')
+        }&code_challenge=${
+            encodeURIComponent(challenge)
+        }&code_challenge_method=S256&audience=${
+            encodeURIComponent('https://sdk.eniblock.com')
+        }&state=${
+            encodeURIComponent(state)
+        }`;
+        window.location.replace(authorizationUrl);
+    }
+
+    // Method to handle logout
+    async logout(accessToken: string) {
+        // Get an instance of Eniblock SDK, delete the TSS Wallet share and clear local storage
+        const sdk = new Eniblock({
+            appId: 'eniblock-demo',
+            accessTokenProvider: () => Promise.resolve(accessToken),
+            storageItems: [{alias: "UnsafeStorage", storage: new UnsafeStorage()}],
         });
+        await sdk.wallet.destroy();
+        console.warn('Your local Eniblock SDK Wallet is destroyed.');
+        localStorage.clear();
     }
 
-    isLoggedIn() {
-        return this.oauthClient.isAuthorized();
+    // Method to handle receiving the authorization code from the callback URL
+    async receiveCode() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const savedState = localStorage.getItem('starter_sdk_react_pkce_state');
+        const verifier = localStorage.getItem('starter_sdk_react_pkce_verifier');
+        const challenge = localStorage.getItem('starter_sdk_react_pkce_challenge');
+        localStorage.setItem('starter_sdk_react_pkce_code', code ?? '');
+
+        if (code && verifier && challenge && state === savedState) {
+            await this.getTokens();
+        } else {
+            throw new Error('Invalid state or missing authorization code');
+        }
     }
 
-    login(): Promise<void> {
-        return this.oauthClient.requestAuthorizationCode();
+    // Method to exchange authorization code for access token
+    private async getTokens() {
+        try {
+            const tokenResponse = await axios.post(`${oauth2SdkUrl}/oauth2/token`, {
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                grant_type: 'authorization_code',
+                code_verifier: localStorage.getItem('starter_sdk_react_pkce_verifier'),
+                code: localStorage.getItem('starter_sdk_react_pkce_code'),
+            }, {
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+            });
+
+            console.log(tokenResponse);
+
+            const accessToken = tokenResponse.data.access_token;
+            const idToken = tokenResponse.data.id_token;
+            localStorage.setItem('starter_sdk_react_access_token', accessToken);
+            localStorage.setItem('starter_sdk_react_id_token', idToken);
+
+            // Clear the verifier and state from session storage
+            localStorage.removeItem('starter_sdk_react_pkce_verifier');
+            localStorage.removeItem('starter_sdk_react_pkce_state');
+
+            // Get user info
+            this.getUserInfo(accessToken);
+            return accessToken;
+        } catch (error) {
+            console.error('Error fetching access token:', error);
+        }
     }
 
-    logout() {
-        return this.oauthClient.reset();
+    // Method to fetch user information using the access token
+    getUserInfo(accessToken: string) {
+        axios.get(`${oauth2SdkUrl}/userinfo`, {
+            headers: {'Authorization': `Bearer ${accessToken}`}
+        }).then(response => console.log('User info: ', response.data))
+            .catch(error => console.error('Error fetching user information:', error));
     }
 
-    receiveCode() {
-        return this.oauthClient.receiveCode();
-    }
-
-    getTokens() {
-        return this.oauthClient.getTokens({'': ''});
+    isLoggedIn(): boolean {
+        return !!localStorage.getItem('starter_sdk_react_access_token');
     }
 }
 

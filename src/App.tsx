@@ -10,50 +10,54 @@ function App(): React.JSX.Element {
     const [publicKey, setPublicKey] = useState<string>('');
     const [address, setAddress] = useState<string>('');
     const [sdk, setSdk] = useState<Eniblock>();
+    const [accessToken, setAccessToken] = useState('');
     const location = useLocation();
-    const accessToken = location?.state?.accessToken ?? '';
+    const accessTokenFromLocation = location?.state?.accessToken ?? '';
 
     const handleLoginClick = () => {
         setTimeout(() => console.log('Log in progress'), 2000);
-        authService.login().then(() => {
-            console.log('Logged in');
-        }).catch((error) => {
-            console.error('Login error: ', error);
-        })
+        authService.login();
+    }
+
+    const logout = () => {
+        setAccessToken('');
+        setPublicKey('');
+        setAddress('');
+        setSdk(undefined);
+        authService.logout(localStorage.getItem('starter_sdk_react_access_token') ?? '');
     }
 
     useEffect(() => {
-        console.log(`access token : ${accessToken}`);
-        const fetchSdk = async () => {
-            if (authService.isLoggedIn()) {
-                console.log('fetch sdk');
-                setSdk(new Eniblock({
-                    appId: process.env.APP_ID!,
-                    tssConfig: {
-                        wasmPath: "wasm/eniblock.wasm",
-                        kmsVerify: true,
-                    },
-                    accessTokenProvider: (() => Promise.resolve(accessToken)),
-                    storageItems: [{alias: "UnsafeStorage", storage: new UnsafeStorage()}],
-                }));
-            }
-            return {};
+        if (accessTokenFromLocation) {
+            setAccessToken(accessTokenFromLocation);
         }
-        console.log('effect');
+    }, [accessTokenFromLocation]);
 
-        fetchSdk().then(() => {
-            console.log('succeeded')
-        }).catch(reason => console.error(reason));
+    useEffect(() => {
+        if (accessToken) {
+            const fetchSdk = async () => {
+                if (authService.isLoggedIn()) {
+                    setSdk(new Eniblock({
+                        appId: 'eniblock-demo',
+                        accessTokenProvider: (() => Promise.resolve(localStorage.getItem('starter_sdk_react_access_token') ?? '')),
+                        storageItems: [{alias: "UnsafeStorage", storage: new UnsafeStorage()}],
+                    }));
+                }
+                return {};
+            }
+
+            fetchSdk().then(() => {
+                console.log('Fetch sdk');
+            }).catch(reason => console.error(reason));
+        }
     }, [accessToken]);
 
     useEffect(() => {
-        if (sdk) {
+        if (sdk && !publicKey) {
             const fetchAccount = async () => {
                 if (sdk) {
                     const wallet = await sdk.wallet.instantiate();
-                    console.log(wallet);
                     const account = await wallet.account.instantiate('My first account');
-                    console.log(account);
                     const publicKeyFromAccount = await account.getPublicKey();
                     setPublicKey(publicKeyFromAccount);
 
@@ -64,8 +68,7 @@ function App(): React.JSX.Element {
                 }
             }
             fetchAccount().then(walletAndAccount => {
-                console.log('succeeded');
-                console.log(walletAndAccount);
+                console.log('Wallet and account:', walletAndAccount);
             }).catch(reason => console.error(reason));
         }
     }, [sdk]);
@@ -86,12 +89,17 @@ function App(): React.JSX.Element {
                     Learn React
                 </a>
                 {publicKey &&
-                    <div>Logged in !
-                        <p>Your wallet and your account are instantiated<br/></p>
-                        <p>Your public key : {publicKey}<br/></p>
-                        <p>Your address : {address}<br/></p>
-                        <p>You can check your console to see the detail of these objects.</p>
-                    </div>
+                    <>
+                        <div>Logged in !
+                            <p>Your wallet and your account are instantiated<br/></p>
+                            <p>Your public key : {publicKey}<br/></p>
+                            <p>Your address : {address}<br/></p>
+                            <p>You can check your console to see the detail of these objects.</p>
+                        </div>
+                        <div>
+                            <button onClick={logout}>Logout</button>
+                        </div>
+                    </>
                 }
                 {!publicKey &&
                     <>

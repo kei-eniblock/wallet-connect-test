@@ -16,15 +16,10 @@ function CheckComponent(): React.JSX.Element {
     useEffect(() => {
         authService.receiveCode().then(() => {
             console.log('Code receive');
-            authService.getTokens().then(accessTokens => {
-                console.log(accessTokens);
-                navigate('/', {
-                    state: {
-                        accessToken: accessTokens.accessToken
-                    }
-                });
-            }).catch((error) => {
-                console.error('Get tokens on error:', error);
+            navigate('/', {
+                state: {
+                    accessToken: localStorage.getItem('starter_sdk_react_access_token')
+                }
             });
         }).catch((error) => {
             console.error('Code not received:', error);

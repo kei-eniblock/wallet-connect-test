@@ -54,7 +54,7 @@ Here are the requirements to use the Eniblock SDK:
    npm i --save-dev webpack@5.76.1
    npm i @eniblock/sdk buffer crypto-browserify stream-browserify node-polyfill-webpack-plugin
    ```
-- update your vue.config.js file adding NodePolyfillPlugin in the plugins and resolve.fallback as well:
+- update your vue.config.ts file adding NodePolyfillPlugin in the plugins and resolve.fallback as well:
   ```
   const {defineConfig} = require('@vue/cli-service')
   const NodePolyfillPlugin = require("node-polyfill-webpack-plugin")
@@ -85,11 +85,3 @@ Here are the requirements to use the Eniblock SDK:
     ]
   }
   ```
-#### For this demo
-Finally, you will need to provide these environment variables in your .env(*) to be able to log in and get your access token:
-```
-AUTH_CLIENT_ID=<the client id of your auth provider>
-AUTH_REDIRECT_URI=<the uri where your auth provider will redirect you after login>
-AUTH_SDK_URL=https://auth.sdk.eniblock.com
-APP_ID=<the id of your app created here https://sdk.eniblock.com/admin >
-```
