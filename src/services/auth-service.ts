@@ -42,6 +42,15 @@ class AuthService {
         });
         await sdk.wallet.destroy();
         console.warn('Your local Eniblock SDK Wallet is destroyed.');
+
+        await axios.post(`${oauth2SdkUrl}/oauth2/revoke`, {
+            client_id: clientId,
+            token: accessToken
+        }, {
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        });
+        console.log('You are logout from the identity provider');
+
         localStorage.clear();
     }
 

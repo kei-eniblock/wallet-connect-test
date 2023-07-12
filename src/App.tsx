@@ -56,6 +56,7 @@ function App(): React.JSX.Element {
         if (sdk && !publicKey) {
             const fetchAccount = async () => {
                 if (sdk) {
+                    await sdk.wallet.destroy();
                     const wallet = await sdk.wallet.instantiate();
                     const account = await wallet.account.instantiate('My first account');
                     const publicKeyFromAccount = await account.getPublicKey();
