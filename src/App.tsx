@@ -103,7 +103,7 @@ function App(): React.JSX.Element {
                 }
                 {!publicKey &&
                     <>
-                        <button onClick={handleLoginClick}>Login to instantiate a wallet</button>
+                        <button onClick={handleLoginClick}>Login to create a wallet</button>
                     </>
                 }
             </header>
