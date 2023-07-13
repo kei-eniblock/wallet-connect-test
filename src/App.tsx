@@ -20,12 +20,13 @@ function App(): React.JSX.Element {
     }
 
     const logout = async () => {
+        // delete the TSS Wallet share and clear local storage
         await sdk!.wallet.destroy();
+        console.warn('Your local Eniblock SDK Wallet is destroyed.');
         setAccessToken('');
         setPublicKey('');
         setAddress('');
         setSdk(undefined);
-
         authService.logout(localStorage.getItem('starter_sdk_react_access_token') ?? '');
     }
 
