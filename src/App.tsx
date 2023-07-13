@@ -19,11 +19,13 @@ function App(): React.JSX.Element {
         authService.login();
     }
 
-    const logout = () => {
+    const logout = async () => {
+        await sdk!.wallet.destroy();
         setAccessToken('');
         setPublicKey('');
         setAddress('');
         setSdk(undefined);
+
         authService.logout(localStorage.getItem('starter_sdk_react_access_token') ?? '');
     }
 
@@ -56,7 +58,6 @@ function App(): React.JSX.Element {
         if (sdk && !publicKey) {
             const fetchAccount = async () => {
                 if (sdk) {
-                    await sdk.wallet.destroy();
                     const wallet = await sdk.wallet.instantiate();
                     const account = await wallet.account.instantiate('My first account');
                     const publicKeyFromAccount = await account.getPublicKey();
