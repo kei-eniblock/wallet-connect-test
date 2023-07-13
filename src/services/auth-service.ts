@@ -1,5 +1,4 @@
 import {generateChallenge, generateVerifier} from "../utils/pkce";
-import {Eniblock, UnsafeStorage} from "@eniblock/sdk";
 import axios from "axios";
 
 const redirectUri = 'https://a.myho.st:8888/check';
