@@ -45,6 +45,10 @@ function App(): React.JSX.Element {
                         accessTokenProvider: (() => Promise.resolve(localStorage.getItem('starter_sdk_react_access_token') ?? '')),
                         storageItems: [{alias: "UnsafeStorage", storage: new UnsafeStorage()}],
                     }));
+                    if (!localStorage.getItem('share-ECDSA')) {
+                        sdk!.wallet.destroy();
+                    }
+
                 }
                 return {};
             }
