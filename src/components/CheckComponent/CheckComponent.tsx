@@ -16,7 +16,7 @@ function CheckComponent(): React.JSX.Element {
     useEffect(() => {
         authService.receiveCode().then(() => {
             console.log('Code receive');
-            navigate('/', {
+            return navigate('/', {
                 state: {
                     accessToken: localStorage.getItem('starter_sdk_react_access_token')
                 }
@@ -24,7 +24,7 @@ function CheckComponent(): React.JSX.Element {
         }).catch((error) => {
             console.error('Code not received:', error);
         });
-    });
+    }, []);
 
     return (
         <div className="sweet-loading">
