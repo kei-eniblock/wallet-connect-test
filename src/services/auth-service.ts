@@ -2,7 +2,7 @@ import {generateChallenge, generateVerifier} from "../utils/pkce";
 import axios from "axios";
 
 const redirectUri = 'https://playful-zuccutto-0898ea.netlify.app/check';
-const clientId = 'a41b90ce-a548-49a3-a403-7ead41a31140';
+const clientId = '34aa6a52-cb58-42ef-b587-9c9e63439ce4';
 const oauth2SdkUrl = 'https://auth.sdk.eniblock.com';
 
 class AuthService {
