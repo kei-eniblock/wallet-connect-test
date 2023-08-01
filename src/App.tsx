@@ -59,7 +59,7 @@ function App(): React.JSX.Element {
                 console.log('Fetch sdk');
             }).catch(reason => console.error(reason));
         }
-    }, [accessToken]);
+    }, [accessToken, sdk]);
 
     useEffect(() => {
         if (sdk && !publicKey) {
