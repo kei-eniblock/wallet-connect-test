@@ -37,7 +37,6 @@ function App(): React.JSX.Element {
     }, [accessTokenFromLocation]);
 
     useEffect(() => {
-        console.log(`toto`);
         if (accessToken) {
             const fetchSdk = async () => {
                 if (authService.isLoggedIn()) {
@@ -46,11 +45,6 @@ function App(): React.JSX.Element {
                         accessTokenProvider: (() => Promise.resolve(localStorage.getItem('starter_sdk_react_access_token') ?? '')),
                         storageItems: [{alias: "UnsafeStorage", storage: new UnsafeStorage()}],
                     }));
-                    console.log(`SDK ${sdk}`);
-                    if (!localStorage.getItem('share-ECDSA')) {
-                        sdk!.wallet.destroy();
-                    }
-
                 }
                 return {};
             }
@@ -59,19 +53,20 @@ function App(): React.JSX.Element {
                 console.log('Fetch sdk');
             }).catch(reason => console.error(reason));
         }
-    }, [accessToken, sdk]);
+    }, [accessToken]);
 
     useEffect(() => {
         if (sdk && !publicKey) {
             const fetchAccount = async () => {
                 if (sdk) {
-                    await sdk.wallet.destroy();
-                    console.log(`sdk: ${sdk}`);
+                    if (!localStorage.getItem('share-ECDSA')) {
+                        await sdk.wallet.destroy();
+                    }
+
                     const wallet = await sdk.wallet.instantiate();
                     const account = await wallet.account.instantiate('My first account');
                     const publicKeyFromAccount = await account.getPublicKey();
                     setPublicKey(publicKeyFromAccount);
-
 
                     // Display the account details.
                     console.log(`Account Details:
